@@ -1,3 +1,14 @@
+#include<cstdlib>
+#include<iostream>
+#include<fstream>
+#include<string>
+#include<vector>
+#include"parsing.hpp"
+#include"trie.hpp"
+
+using namespace std;
+using namespace aria; //parser
+
 /*
 
 organização:
@@ -43,4 +54,44 @@ pré-processamento:
     - explicar a 2
     - rodar \o/
 
+
+observações: 
+dados a serem guardados para cada jogador
+    - id
+    - nome
+    - posição
+    - avaliação(media das avaliações)
+    - contador de avaliações
+    - tags
+
+nome->arvore trie
+id->hash e arvore trie(nos nodos terminadores)
+posição->hash
+avaliação->hash
+contador de avaliações->hash
+
 */
+
+int main()
+{
+    TRIE trie;
+    string generica;
+    vector<int> ids;
+    int indice;
+    trie.insere(trie.get_raiz(),"joel",1,0);
+    trie.insere(trie.get_raiz(),"joao",2,0);
+    trie.insere(trie.get_raiz(),"joel",3,0);
+    trie.insere(trie.get_raiz(),"joao",4,0);
+    trie.insere(trie.get_raiz(),"kamille",5,0);
+
+    trie.printa_arvore(trie.get_raiz(),indice,generica);
+
+    trie.get_jogadores_prefixo(trie.get_raiz(),"jo",0,ids);
+
+    for(int i=0;i<ids.size();i++)
+    {
+        cout<<ids[i]<<endl;
+    }
+    cout<<"\noi\n";
+    return 0;
+}
