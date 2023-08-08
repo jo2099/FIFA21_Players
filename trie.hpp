@@ -92,6 +92,7 @@ void TRIE::insere(trie_node* raiz,string palavra,int id,int pos_char) //recebe a
     {
         raiz->fim_palavra = true;
         raiz->ids.push_back(id);
+        num_palavras++;
         return;
     }
     else if(tem_filho_char(raiz,palavra[pos_char])) //se o nodo tiver um filho com a letra da palavra, chama a função recursivamente para o filho e passa pos_char+1

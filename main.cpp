@@ -5,9 +5,10 @@
 #include<vector>
 #include"parsing.hpp"
 #include"trie.hpp"
+#include"HashTable.hpp"
 
 using namespace std;
-using namespace aria; //parser
+using namespace aria::csv; //parser
 
 /*
 
@@ -70,28 +71,42 @@ posição->hash
 avaliação->hash
 contador de avaliações->hash
 
+ir lendo do arquivo de players e ir
+
 */
+
+#define TAM_HASH 10000
 
 int main()
 {
     TRIE trie;
+    ifstream arquivo_players("./files/players.csv");
+    HashTable hash_id(TAM_HASH);
+    JOGADOR generico;
     string generica;
     vector<int> ids;
     int indice;
-    trie.insere(trie.get_raiz(),"joel",1,0);
-    trie.insere(trie.get_raiz(),"joao",2,0);
-    trie.insere(trie.get_raiz(),"joel",3,0);
-    trie.insere(trie.get_raiz(),"joao",4,0);
-    trie.insere(trie.get_raiz(),"kamille",5,0);
+    CsvParser parser_players(arquivo_players);
+    for(int i=0;i<4;i++)
+        parser_players.next_field();
 
-    trie.printa_arvore(trie.get_raiz(),indice,generica);
-
-    trie.get_jogadores_prefixo(trie.get_raiz(),"jo",0,ids);
-
-    for(int i=0;i<ids.size();i++)
+    for(auto row:parser_players)
     {
-        cout<<ids[i]<<endl;
+        generico.id = stoi(row[0]);
+        generico.nome = row[1];
+        generico.posicao = row[2];
+        hash_id.insere_jogador(generico);
+        trie.insere(trie.get_raiz(),generico.nome, generico.id,0);
+        
     }
+    // hash_id.printa_tabela_nomes();
+    // trie.printa_arvore(trie.get_raiz(),0,generica);
+    trie.get_jogadores_prefixo(trie.get_raiz(),"Joao",0,ids);
+    for(int i=0;i<ids.size();i++)
+        hash_id.printa_jogador(hash_id.busca_jogador(ids[i]));    
+
+    
+
     cout<<"\noi\n";
     return 0;
 }

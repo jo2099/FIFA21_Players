@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <memory>
+#include<iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
