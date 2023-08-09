@@ -6,6 +6,7 @@
 #include"parsing.hpp"
 #include"trie.hpp"
 #include"HashTable.hpp"
+#include"HashUsers.hpp"
 
 using namespace std;
 using namespace aria::csv; //parser
@@ -71,22 +72,41 @@ posição->hash
 avaliação->hash
 contador de avaliações->hash
 
-ir lendo do arquivo de players e ir
-
 */
 
-#define TAM_HASH 10000
+#define TAM_HASH_PLAYERS 10000
+#define TAM_HASH_AVALIACAO 4007
+//FAZER TABELA HASH PARA USARIOS QUE AVALIAM JOGADORES
+// void calcula_avaliacao(TRIE &trie,HashTable &hash_id,/*HASH_USARIOS hash*/)
+// {
+//     ifstream arquivo_notas("./files/minirating.csv");
+//     CsvParser parser_notas(arquivo_notas);
+//     JOGADOR generico;
+//     vector<int> ids;
+//     int user_id,player_id,nota;
+//     for(int i=0;i<4;i++)
+//         parser_notas.next_field();
+//     for(auto row:parser_notas)
+//     {
 
-int main()
+//     }
+// }
+
+void printa_prefixo(TRIE &trie, HashTable &hash_id, string prefixo)
 {
-    TRIE trie;
+    vector<int> ids; 
+    trie.get_jogadores_prefixo(trie.get_raiz(),prefixo,0,ids);
+    for(int i=0;i<ids.size();i++)
+    {
+        hash_id.printa_jogador(hash_id.busca_jogador(ids[i]));
+    }
+}
+
+void preenche_hash_id(TRIE &trie, HashTable &hash_id)
+{
     ifstream arquivo_players("./files/players.csv");
-    HashTable hash_id(TAM_HASH);
-    JOGADOR generico;
-    string generica;
-    vector<int> ids;
-    int indice;
     CsvParser parser_players(arquivo_players);
+    JOGADOR generico;
     for(int i=0;i<4;i++)
         parser_players.next_field();
 
@@ -99,11 +119,87 @@ int main()
         trie.insere(trie.get_raiz(),generico.nome, generico.id,0);
         
     }
-    // hash_id.printa_tabela_nomes();
-    // trie.printa_arvore(trie.get_raiz(),0,generica);
-    trie.get_jogadores_prefixo(trie.get_raiz(),"Joao",0,ids);
-    for(int i=0;i<ids.size();i++)
-        hash_id.printa_jogador(hash_id.busca_jogador(ids[i]));    
+}
+
+void atualiza_avaliacao(HashTable &hash_id, int id, int nota)
+{
+    JOGADOR* pt_jg=hash_id.busca_jogador_ref(id);
+    if(pt_jg)
+    {
+        pt_jg->avaliacao += nota;
+        pt_jg->num_avaliacoes++;
+
+    }
+    else
+    {
+        cout<<"ponteiro NULL"<<endl;
+    }
+}
+
+void preenche_hash_avaliacao(TRIE &trie, HashTable &hash_id, HashUser &hash_avaliacao)
+{
+    ifstream arquivo_notas("./files/minirating.csv");
+    CsvParser parser_notas(arquivo_notas);
+    JOGADOR jogador_generico;
+    USER* pt_user;
+    USER usuario_generico;
+    vector<int> ids;
+    int user_id,player_id,nota;
+    for(int i=0;i<4;i++)
+        parser_notas.next_field();
+    for(auto row:parser_notas)
+    {
+        usuario_generico.id_user = stoi(row[0]);
+        if(hash_avaliacao.busca_user(usuario_generico.id_user).id_user == -1)
+        {
+            usuario_generico.num_avaliacoes++;
+            inserirOrdenado(usuario_generico.avaliacoes,make_tuple(stoi(row[1]),stoi(row[2])));
+            hash_avaliacao.insere_user(usuario_generico);
+            atualiza_avaliacao(hash_id,stoi(row[1]),stoi(row[2]));
+        }
+        else
+        {
+            pt_user=hash_avaliacao.busca_user_ref(usuario_generico.id_user);
+            pt_user->num_avaliacoes++;
+            inserirOrdenado(pt_user->avaliacoes,make_tuple(stoi(row[1]),stoi(row[2])));
+            atualiza_avaliacao(hash_id,stoi(row[1]),stoi(row[2]));
+        }
+        usuario_generico.avaliacoes.clear();
+    }
+}
+
+int main()
+{
+    TRIE trie;
+    HashTable hash_id(TAM_HASH_PLAYERS);
+    JOGADOR generico;
+    HashUser hash_usuarios(TAM_HASH_AVALIACAO);
+    string generica;
+    string opcao;
+    vector<int> ids;
+    int id_user;
+
+    preenche_hash_id(trie,hash_id);
+    // calcula_avaliacao(trie,hash_id,hash_avaliacao);
+    preenche_hash_avaliacao(trie,hash_id,hash_usuarios);
+
+    do
+    {
+        cin>>opcao;
+        if(opcao == "player")
+        {
+            getline(cin,generica);
+            generica.erase(0,1); //tira o espaço
+            printa_prefixo(trie,hash_id,generica);
+        }
+        else if(opcao == "user")
+        {
+            cin>>id_user;
+            hash_usuarios.printa_user(hash_usuarios.busca_user(id_user));
+        }
+
+    } while (opcao!="sair");
+      
 
     
 

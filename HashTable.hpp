@@ -33,6 +33,7 @@ public:
     void printa_tabela();
     void printa_tabela_nomes();
     JOGADOR busca_jogador(int id);
+    JOGADOR* busca_jogador_ref(int id);
     void remove_jogador(int id);
     void printa_jogador(JOGADOR player);
     ~HashTable();
@@ -64,6 +65,19 @@ void HashTable::insere_jogador(JOGADOR jogador)
     int indice = hash_function(jogador.id);
     tabela[indice].push_back(jogador);
     num_jogadores++;
+}
+
+JOGADOR* HashTable::busca_jogador_ref(int id)
+{
+    int indice = hash_function(id);
+    for (int i = 0; i < tabela[indice].size(); i++)
+    {
+        if (tabela[indice][i].id == id)
+        {
+            return &tabela[indice][i];
+        }
+    }
+    return NULL;
 }
 
 void HashTable::printa_jogador(JOGADOR player)
