@@ -74,23 +74,27 @@ contador de avaliações->hash
 
 */
 
+/*
+CM
+CDM
+GK
+CAM
+RB
+LB
+LWB
+CB
+RM
+LM
+LW
+RW
+ST
+RWB
+CF
+*/
+
 #define TAM_HASH_PLAYERS 10000
 #define TAM_HASH_AVALIACAO 4007
 //FAZER TABELA HASH PARA USARIOS QUE AVALIAM JOGADORES
-// void calcula_avaliacao(TRIE &trie,HashTable &hash_id,/*HASH_USARIOS hash*/)
-// {
-//     ifstream arquivo_notas("./files/minirating.csv");
-//     CsvParser parser_notas(arquivo_notas);
-//     JOGADOR generico;
-//     vector<int> ids;
-//     int user_id,player_id,nota;
-//     for(int i=0;i<4;i++)
-//         parser_notas.next_field();
-//     for(auto row:parser_notas)
-//     {
-
-//     }
-// }
 
 void printa_prefixo(TRIE &trie, HashTable &hash_id, string prefixo)
 {
@@ -106,6 +110,7 @@ void preenche_hash_id(TRIE &trie, HashTable &hash_id)
 {
     ifstream arquivo_players("./files/players.csv");
     CsvParser parser_players(arquivo_players);
+    string str_generica;
     JOGADOR generico;
     for(int i=0;i<4;i++)
         parser_players.next_field();
@@ -114,10 +119,35 @@ void preenche_hash_id(TRIE &trie, HashTable &hash_id)
     {
         generico.id = stoi(row[0]);
         generico.nome = row[1];
-        generico.posicao = row[2];
+        str_generica = row[2];
+        generico.posicoes.clear();
+        //retira espacos da str_generica
+        for(int i=0;i<str_generica.size();i++)
+        {
+            if(str_generica[i] == ' ')
+            {
+                str_generica.erase(i,1);
+                i--;
+            }
+        }
+        //separa as posicoes
+        for(int i=0;i<str_generica.size();i++)
+        {
+            if(str_generica[i] == ',')
+            {
+                generico.posicoes.push_back(str_generica.substr(0,i));
+                str_generica.erase(0,i+1);
+                i=0;
+            }
+            //se for a ultima posicao
+            if(i == str_generica.size()-1)
+            {
+                generico.posicoes.push_back(str_generica);
+            }
+        }
+        str_generica.clear();
         hash_id.insere_jogador(generico);
-        trie.insere(trie.get_raiz(),generico.nome, generico.id,0);
-        
+        trie.insere(trie.get_raiz(),generico.nome, generico.id,0);        
     }
 }
 
@@ -168,6 +198,37 @@ void preenche_hash_avaliacao(TRIE &trie, HashTable &hash_id, HashUser &hash_aval
     }
 }
 
+void calcula_media(HashTable &hash_id) //faz a media das avaliações de cada jogador
+{
+    JOGADOR* pt_jg;
+    for(int i=0;i<TAM_HASH_PLAYERS;i++) //percorre a tabela hash
+    {
+        if(hash_id.get_vetor(i).size()>1)//se a posição não estiver vazia
+        {
+            for(int j=0;j<hash_id.get_vetor(i).size();j++) //percorre a lista
+            {
+                pt_jg=hash_id.busca_jogador_ref(hash_id.get_vetor(i)[j].id); //pega o ponteiro para o jogador
+                if(pt_jg->num_avaliacoes>0)
+                {
+                    pt_jg->avaliacao = pt_jg->avaliacao/pt_jg->num_avaliacoes;
+                }
+            }
+        }
+    }
+}
+
+template <typename T>
+bool esta_vetor(vector<T> vetor, T elemento)
+{
+    for(int i=0;i<vetor.size();i++)
+    {
+        if(vetor[i] == elemento)
+            return true;
+    }
+    return false;
+}
+
+
 int main()
 {
     TRIE trie;
@@ -180,8 +241,12 @@ int main()
     int id_user;
 
     preenche_hash_id(trie,hash_id);
-    // calcula_avaliacao(trie,hash_id,hash_avaliacao);
     preenche_hash_avaliacao(trie,hash_id,hash_usuarios);
+    calcula_media(hash_id);
+
+    cout<<"Digite player ou user"<<endl;
+
+
 
     do
     {
@@ -195,7 +260,24 @@ int main()
         else if(opcao == "user")
         {
             cin>>id_user;
-            hash_usuarios.printa_user(hash_usuarios.busca_user(id_user));
+            USER usuario=hash_usuarios.busca_user(id_user);
+            JOGADOR jogador_generico;
+            hash_usuarios.printa_user(usuario);
+            //coloca os ids avaliados pelo usuario em um vetor
+            //printa os jogadores com esses ids
+            if(usuario.id_user == -1)
+            {
+                cout<<"usuario nao encontrado"<<endl;
+                continue;
+            }
+            for(int i=0;i<usuario.avaliacoes.size();i++) //percorre as avaliações do usuario
+            {
+                jogador_generico=hash_id.busca_jogador(get<0>(usuario.avaliacoes[i]));
+                cout<<"nome: "<<jogador_generico.nome;
+                cout<<" global rating: "<<jogador_generico.avaliacao;
+                cout<<" count: "<<jogador_generico.num_avaliacoes;
+                cout<<" rating: "<<get<1>(usuario.avaliacoes[i])<<endl;
+            }
         }
 
     } while (opcao!="sair");
