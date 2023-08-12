@@ -7,6 +7,7 @@
 #include"trie.hpp"
 #include"HashTable.hpp"
 #include"HashUsers.hpp"
+#include <chrono>
 
 using namespace std;
 using namespace aria::csv; //parser
@@ -74,23 +75,27 @@ contador de avaliações->hash
 
 */
 
+/*
+CM
+CDM
+GK
+CAM
+RB
+LB
+LWB
+CB
+RM
+LM
+LW
+RW
+ST
+RWB
+CF
+*/
+
 #define TAM_HASH_PLAYERS 10000
 #define TAM_HASH_AVALIACAO 4007
 //FAZER TABELA HASH PARA USARIOS QUE AVALIAM JOGADORES
-// void calcula_avaliacao(TRIE &trie,HashTable &hash_id,/*HASH_USARIOS hash*/)
-// {
-//     ifstream arquivo_notas("./files/minirating.csv");
-//     CsvParser parser_notas(arquivo_notas);
-//     JOGADOR generico;
-//     vector<int> ids;
-//     int user_id,player_id,nota;
-//     for(int i=0;i<4;i++)
-//         parser_notas.next_field();
-//     for(auto row:parser_notas)
-//     {
-
-//     }
-// }
 
 void printa_prefixo(TRIE &trie, HashTable &hash_id, string prefixo)
 {
@@ -106,6 +111,7 @@ void preenche_hash_id(TRIE &trie, HashTable &hash_id)
 {
     ifstream arquivo_players("./files/players.csv");
     CsvParser parser_players(arquivo_players);
+    string str_generica;
     JOGADOR generico;
     for(int i=0;i<4;i++)
         parser_players.next_field();
@@ -114,10 +120,35 @@ void preenche_hash_id(TRIE &trie, HashTable &hash_id)
     {
         generico.id = stoi(row[0]);
         generico.nome = row[1];
-        generico.posicao = row[2];
+        str_generica = row[2];
+        generico.posicoes.clear();
+        //retira espacos da str_generica
+        for(int i=0;i<str_generica.size();i++)
+        {
+            if(str_generica[i] == ' ')
+            {
+                str_generica.erase(i,1);
+                i--;
+            }
+        }
+        //separa as posicoes
+        for(int i=0;i<str_generica.size();i++)
+        {
+            if(str_generica[i] == ',')
+            {
+                generico.posicoes.push_back(str_generica.substr(0,i));
+                str_generica.erase(0,i+1);
+                i=0;
+            }
+            //se for a ultima posicao
+            if(i == str_generica.size()-1)
+            {
+                generico.posicoes.push_back(str_generica);
+            }
+        }
+        str_generica.clear();
         hash_id.insere_jogador(generico);
-        trie.insere(trie.get_raiz(),generico.nome, generico.id,0);
-        
+        trie.insere(trie.get_raiz(),generico.nome, generico.id,0);        
     }
 }
 
@@ -168,6 +199,108 @@ void preenche_hash_avaliacao(TRIE &trie, HashTable &hash_id, HashUser &hash_aval
     }
 }
 
+void calcula_media(HashTable &hash_id) //faz a media das avaliações de cada jogador
+{
+    JOGADOR* pt_jg;
+    for(int i=0;i<TAM_HASH_PLAYERS;i++) //percorre a tabela hash
+    {
+        if(hash_id.get_vetor(i).size()>1)//se a posição não estiver vazia
+        {
+            for(int j=0;j<hash_id.get_vetor(i).size();j++) //percorre a lista
+            {
+                pt_jg=hash_id.busca_jogador_ref(hash_id.get_vetor(i)[j].id); //pega o ponteiro para o jogador
+                if(pt_jg->num_avaliacoes>0)
+                {
+                    pt_jg->avaliacao = pt_jg->avaliacao/pt_jg->num_avaliacoes;
+                }
+            }
+        }
+    }
+}
+
+template <typename T>
+bool esta_vetor(vector<T> vetor, T elemento)
+{
+    for(int i=0;i<vetor.size();i++)
+    {
+        if(vetor[i] == elemento)
+            return true;
+    }
+    return false;
+}
+
+/*
+// -> ordena todas as posições por rating
+void classify_positions(){
+
+    // para todos os jogadores
+        // se é NULL continue
+        // se tem menos de 1000 ratings count continue
+
+        // for(pos_id : player->position_ids) // -> pra cada posição que o jogador tem
+            // testa se a posição é valida
+
+            //coloca o player na lista ordenada da sua posição conforme o rating
+
+    for (int id_player : class?.player_ids){ //-> player_ids = todos os jogadores lidos
+        JOGADOR* player = hash_id.busca_jogador_ref(id_player);
+
+        if(player == NULL) continue;
+        if(player->avaliacao < 1000) continue;
+
+        for(int pos_id : player->position_ids){
+            if(pos_id < 0 || pos_id >= NUM_POSITIONS){
+                cout << "Invalid player position with";
+            }
+
+            rating = player->avaliacao;
+            class?.players_in_position[pos_id].*insere ordenado*(rating, id_user);
+        }
+
+    }
+
+}
+
+int position_to_index(const string& pos) {
+	vector<string> all_positions = {"CAM", "CB", "CDM", "CF", "CM", "GK", "LB", "LM", "LW", "LWB", "RB", "RM", "RW", "RWB", "ST" };
+
+	for (int i = 0; i < all_positions.size(); ++i) {
+		if (all_positions[i] == pos)
+			return i;
+	}
+	return -1;
+}
+
+void answer_top_position(int n_top, string param_str){
+
+    //param_str.erase(remove(param_str.begin(), param_str.end(), ' '), param_str.end());
+	//param_str.erase(remove(param_str.begin(), param_str.end(), '\''), param_str.end());
+
+    int i_pos = position_to_index(param_str);
+	if (i_pos == -1) {
+		cout << "Did not find the position <" << param_str << ">.\n";
+		return;
+	}
+
+    //se tem menos players que o n dado
+    /*
+    if (n_top > class?.players_in_position[i_pos].size()){
+        n_top = class?.players_in_position[i_pos].size();
+        cout << "There are only " << n_top << " players in this position (w/ +1000 ratings).\n";
+    }
+    */
+
+    /*
+    cout << "Top " << n_top << "of position '" << param_str << "':\n";
+    for (int i = 0; i < n_top; ++i) {
+        int id_player = class?.players_in_position[i_pos].[i];
+        JOGADOR player = busca_jogador(id_player);
+        printa_jogador(player);
+    }
+
+*/
+
+
 int main()
 {
     TRIE trie;
@@ -179,28 +312,83 @@ int main()
     vector<int> ids;
     int id_user;
 
+    auto t_start = std::chrono::high_resolution_clock::now();
+
     preenche_hash_id(trie,hash_id);
-    // calcula_avaliacao(trie,hash_id,hash_avaliacao);
     preenche_hash_avaliacao(trie,hash_id,hash_usuarios);
+    calcula_media(hash_id);
+    //classify_positions() 
 
-    do
-    {
-        cin>>opcao;
-        if(opcao == "player")
-        {
-            getline(cin,generica);
-            generica.erase(0,1); //tira o espaço
-            printa_prefixo(trie,hash_id,generica);
-        }
-        else if(opcao == "user")
-        {
-            cin>>id_user;
-            hash_usuarios.printa_user(hash_usuarios.busca_user(id_user));
-        }
-
-    } while (opcao!="sair");
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double time = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+    cout << "Preprocessing time: " << time << endl;
       
+    do{
+        cout << "Query [player,user,topN,tags,quit]:\n";
+        string opcao;
+		getline(cin, opcao);
 
+        // input example: player lionel finds all players with that prefix
+
+        int first_space = opcao.find_first_of(' ');
+        if(first_space == -1){
+            cout << "Try again, input not specified\n";
+            continue;
+        } 
+
+        // Separates the input
+        string until_first_space = opcao.substr(0, first_space);
+        string param_str = opcao.substr(first_space + 1);
+
+        // to see all players, input ex: player ' ' -> space
+        if (until_first_space == "player"){
+            printa_prefixo(trie,hash_id,param_str);
+        }
+
+        else if (until_first_space == "user"){
+            int id_user = stoi(param_str);
+
+            USER usuario=hash_usuarios.busca_user(id_user);
+            JOGADOR jogador_generico;
+            hash_usuarios.printa_user(usuario);
+            //coloca os ids avaliados pelo usuario em um vetor
+            //printa os jogadores com esses ids
+            if(usuario.id_user == -1)
+            {
+                cout<<"usuario nao encontrado"<<endl;
+                continue;
+            }
+            for(int i=0;i<usuario.avaliacoes.size();i++) //percorre as avaliações do usuario
+            {
+                jogador_generico=hash_id.busca_jogador(get<0>(usuario.avaliacoes[i]));
+                cout<<"nome: "<<jogador_generico.nome;
+                cout<<" global rating: "<<jogador_generico.avaliacao;
+                cout<<" count: "<<jogador_generico.num_avaliacoes;
+                cout<<" rating: "<<get<1>(usuario.avaliacoes[i])<<endl;
+            }
+        }
+
+        else if (until_first_space.find("top") == 0){
+            string n_top_str = until_first_space.substr(3);
+            int n_top = std::stoi(n_top_str);
+
+            cout << n_top << endl;
+            cout << param_str << endl;
+
+           // answer_top_position(/*passar o vetor de todas as posições ordenadas*/, n_top, param_str);
+        }
+
+        else if (until_first_space == "tags"){
+            // tags \o/
+        }
+
+        else{
+            cout << "Try again, input not specified^2\n";
+        }
+
+    }while (opcao != "sair");
+    cout << "Ending operation\n";
+      
     
 
     cout<<"\noi\n";
