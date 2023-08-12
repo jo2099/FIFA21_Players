@@ -11,7 +11,7 @@ typedef struct jogador
 {
     int id;
     string nome;
-    vector<string> posicoes;
+    string posicao;
     float avaliacao = 0;
     int num_avaliacoes = 0;
     vector<string> tags;
@@ -37,7 +37,6 @@ public:
     JOGADOR* busca_jogador_ref(int id);
     void remove_jogador(int id);
     void printa_jogador(JOGADOR player);
-    vector<JOGADOR> get_vetor(int indice) { return tabela[indice];}
     ~HashTable();
 };
 
@@ -84,26 +83,12 @@ JOGADOR* HashTable::busca_jogador_ref(int id)
 
 void HashTable::printa_jogador(JOGADOR player)
 {
-<<<<<<< HEAD
     cout << "ID: " << player.id << " Name: " << player.nome << " Position: " << player.posicao << " Rating: " << player.avaliacao << " Count: " << player.num_avaliacoes << " Tags: ";
     for (int i = 0; i < player.tags.size(); i++)
-=======
-    cout<<"ID: "<<player.id<<" ";
-    cout<<"Nome: "<<player.nome<<" ";
-    cout<<"Posicoes: ";
-    for(int i=0;i<player.posicoes.size();i++)
->>>>>>> 5461cdc0a4dcfab545a4d823a5a8074fe1bdd579
     {
-        cout<<player.posicoes[i]<<" ";
+        cout << player.tags[i] << " ";
     }
-    cout<<"Avaliacao: "<<player.avaliacao<<" ";
-    cout<<"Num avaliacoes: "<<player.num_avaliacoes<<" ";
-    cout<<"Tags: ";
-    for(int i=0;i<player.tags.size();i++)
-    {
-        cout<<player.tags[i]<<" ";
-    }
-    cout<<endl;
+    cout << endl;
 }
 
 JOGADOR HashTable::busca_jogador(int id)
