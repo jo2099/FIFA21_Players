@@ -25,6 +25,7 @@ private:
     int num_jogadores;
 
 public:
+    
     HashTable(int tamanho);
     int get_tamanho() { return tamanho; };
     int get_num_jogadores() { return num_jogadores; };

@@ -1,8 +1,9 @@
-#include<cstdlib>
-#include<iostream>
-#include<fstream>
-#include<string>
-#include<vector>
+#include <cstdlib>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <chrono>
 #include"parsing.hpp"
 #include"trie.hpp"
 #include"HashTable.hpp"
@@ -95,6 +96,8 @@ CF
 
 #define TAM_HASH_PLAYERS 10000
 #define TAM_HASH_AVALIACAO 4007
+
+#define NUM_POSITIONS 15
 //FAZER TABELA HASH PARA USARIOS QUE AVALIAM JOGADORES
 
 void printa_prefixo(TRIE &trie, HashTable &hash_id, string prefixo)
@@ -311,6 +314,8 @@ int main()
     string opcao;
     vector<int> ids;
     int id_user;
+
+    auto t_start = std::chrono::high_resolution_clock::now();
 
     auto t_start = std::chrono::high_resolution_clock::now();
 
