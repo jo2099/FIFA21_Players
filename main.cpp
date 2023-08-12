@@ -1,14 +1,12 @@
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <chrono>
+#include<cstdlib>
+#include<iostream>
+#include<fstream>
+#include<string>
+#include<vector>
 #include"parsing.hpp"
 #include"trie.hpp"
 #include"HashTable.hpp"
 #include"HashUsers.hpp"
-
 
 using namespace std;
 using namespace aria::csv; //parser
@@ -78,8 +76,6 @@ contador de avaliações->hash
 
 #define TAM_HASH_PLAYERS 10000
 #define TAM_HASH_AVALIACAO 4007
-
-#define NUM_POSITIONS 15
 //FAZER TABELA HASH PARA USARIOS QUE AVALIAM JOGADORES
 // void calcula_avaliacao(TRIE &trie,HashTable &hash_id,/*HASH_USARIOS hash*/)
 // {
@@ -171,77 +167,6 @@ void preenche_hash_avaliacao(TRIE &trie, HashTable &hash_id, HashUser &hash_aval
         usuario_generico.avaliacoes.clear();
     }
 }
-/*
-// -> ordena todas as posições por rating
-void classify_positions(){
-
-    // para todos os jogadores
-        // se é NULL continue
-        // se tem menos de 1000 ratings count continue
-
-        // for(pos_id : player->position_ids) // -> pra cada posição que o jogador tem
-            // testa se a posição é valida
-
-            //coloca o player na lista ordenada da sua posição conforme o rating
-
-    for (int id_player : class?.player_ids){ //-> player_ids = todos os jogadores lidos
-        JOGADOR* player = hash_id.busca_jogador_ref(id_player);
-
-        if(player == NULL) continue;
-        if(player->avaliacao < 1000) continue;
-
-        for(int pos_id : player->position_ids){
-            if(pos_id < 0 || pos_id >= NUM_POSITIONS){
-                cout << "Invalid player position with";
-            }
-
-            rating = player->avaliacao;
-            class?.players_in_position[pos_id].*insere ordenado*(rating, id_user);
-        }
-
-    }
-
-}
-
-int position_to_index(const string& pos) {
-	vector<string> all_positions = {"CAM", "CB", "CDM", "CF", "CM", "GK", "LB", "LM", "LW", "LWB", "RB", "RM", "RW", "RWB", "ST" };
-
-	for (int i = 0; i < all_positions.size(); ++i) {
-		if (all_positions[i] == pos)
-			return i;
-	}
-	return -1;
-}
-
-void answer_top_position(int n_top, string param_str){
-
-    //param_str.erase(remove(param_str.begin(), param_str.end(), ' '), param_str.end());
-	//param_str.erase(remove(param_str.begin(), param_str.end(), '\''), param_str.end());
-
-    int i_pos = position_to_index(param_str);
-	if (i_pos == -1) {
-		cout << "Did not find the position <" << param_str << ">.\n";
-		return;
-	}
-
-    //se tem menos players que o n dado
-    /*
-    if (n_top > class?.players_in_position[i_pos].size()){
-        n_top = class?.players_in_position[i_pos].size();
-        cout << "There are only " << n_top << " players in this position (w/ +1000 ratings).\n";
-    }
-    */
-
-    /*
-    cout << "Top " << n_top << "of position '" << param_str << "':\n";
-    for (int i = 0; i < n_top; ++i) {
-        int id_player = class?.players_in_position[i_pos].[i];
-        JOGADOR player = busca_jogador(id_player);
-        printa_jogador(player);
-    }
-
-*/
-
 
 int main()
 {
@@ -254,20 +179,12 @@ int main()
     vector<int> ids;
     int id_user;
 
-    auto t_start = std::chrono::high_resolution_clock::now();
-
     preenche_hash_id(trie,hash_id);
     // calcula_avaliacao(trie,hash_id,hash_avaliacao);
     preenche_hash_avaliacao(trie,hash_id,hash_usuarios);
-    //classify_positions() 
 
-    auto t_end = std::chrono::high_resolution_clock::now();
-    double time = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-    cout << "Preprocessing time: " << time << endl;
-
-    /* do
+    do
     {
-        cout << "Query [player,user,topN,tags,quit]:\n>>>\t";
         cin>>opcao;
         if(opcao == "player")
         {
@@ -281,56 +198,11 @@ int main()
             hash_usuarios.printa_user(hash_usuarios.busca_user(id_user));
         }
 
-    } while (opcao!="sair"); */
-
-
-    do{
-        cout << "Query [player,user,topN,tags,quit]:\n";
-        string opcao;
-		getline(cin, opcao);
-
-        // input example: player lionel finds all players with that prefix
-
-        int first_space = opcao.find_first_of(' ');
-        if(first_space == -1){
-            cout << "Try again, input not specified\n";
-            continue;
-        } 
-
-        // Separates the input
-        string until_first_space = opcao.substr(0, first_space);
-        string param_str = opcao.substr(first_space + 1);
-
-        // to see all players, input ex: player ' ' -> space
-        if (until_first_space == "player"){
-            printa_prefixo(trie,hash_id,param_str);
-        }
-
-        else if (until_first_space == "user"){
-            int id_user = std::stoi(param_str);
-            hash_usuarios.printa_user(hash_usuarios.busca_user(id_user));
-        }
-
-        else if (until_first_space.find("top") == 0){
-            string n_top_str = until_first_space.substr(3);
-            int n_top = std::stoi(n_top_str);
-
-            cout << n_top << endl;
-            cout << param_str << endl;
-
-           // answer_top_position(/*passar o vetor de todas as posições ordenadas*/, n_top, param_str);
-        }
-
-        else if (until_first_space == "tags"){
-            // tags \o/
-        }
-
-        else{
-            cout << "Try again, input not specified^2\n";
-        }
-
-    }while (opcao != "sair");
-    cout << "Ending operation\n";
+    } while (opcao!="sair");
       
+
+    
+
+    cout<<"\noi\n";
     return 0;
 }

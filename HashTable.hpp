@@ -25,7 +25,6 @@ private:
     int num_jogadores;
 
 public:
-    
     HashTable(int tamanho);
     int get_tamanho() { return tamanho; };
     int get_num_jogadores() { return num_jogadores; };
@@ -83,7 +82,7 @@ JOGADOR* HashTable::busca_jogador_ref(int id)
 
 void HashTable::printa_jogador(JOGADOR player)
 {
-    cout << "ID: " << player.id << " Name: " << player.nome << " Position: " << player.posicao << " Rating: " << player.avaliacao << " Count: " << player.num_avaliacoes << " Tags: ";
+    cout << "id: " << player.id << " nome: " << player.nome << " posicao: " << player.posicao << " avaliacao: " << player.avaliacao << " num_avaliacoes: " << player.num_avaliacoes << " tags: ";
     for (int i = 0; i < player.tags.size(); i++)
     {
         cout << player.tags[i] << " ";
