@@ -9,6 +9,8 @@
 #include"HashTable.hpp"
 #include"HashUsers.hpp"
 #include <chrono>
+#include<algorithm>
+#include<sstream>
 
 using namespace std;
 using namespace aria::csv; //parser
@@ -98,9 +100,41 @@ CF
 #define TAM_HASH_AVALIACAO 4007
 
 #define NUM_POSITIONS 15
-//FAZER TABELA HASH PARA USARIOS QUE AVALIAM JOGADORES
 
-void printa_prefixo(TRIE &trie, HashTable &hash_id, string prefixo)
+vector<int> intersectionOfVectors(const vector<vector<int>>& sortedVectors) {
+    if (sortedVectors.empty()) {
+        return {};  // Nenhum vetor para interseção
+    }
+    
+    vector<int> result = sortedVectors[0];  // Começamos com o primeiro vetor
+    
+    for (size_t i = 1; i < sortedVectors.size(); ++i) {
+        std::vector<int> tempResult;
+        const std::vector<int>& currentVector = sortedVectors[i];
+        
+        size_t j = 0, k = 0;
+        while (j < result.size() && k < currentVector.size()) {
+            if (result[j] < currentVector[k]) {
+                ++j;
+            } else if (result[j] > currentVector[k]) {
+                ++k;
+            } else {
+                tempResult.push_back(result[j]);
+                ++j;
+                ++k;
+            }
+        }
+        
+        result = tempResult;
+        
+        if (result.empty()) {
+            break;  // Não há elementos em comum, podemos parar
+        }
+    }
+    
+    return result;
+}
+void printa_prefixo(TRIE &trie, HashTable<JOGADOR> &hash_id, string prefixo)
 {
     vector<int> ids; 
     trie.get_jogadores_prefixo(trie.get_raiz(),prefixo,0,ids);
@@ -110,7 +144,53 @@ void printa_prefixo(TRIE &trie, HashTable &hash_id, string prefixo)
     }
 }
 
-void preenche_hash_id(TRIE &trie, HashTable &hash_id)
+
+vector<std::string> tokenize(const string& input, const string& delimiters) {
+    vector<std::string> tokens;
+    stringstream ss(input);
+    string token;
+
+    while (getline(ss, token)) {
+        size_t pos = 0;
+        while ((pos = token.find_first_of(delimiters)) != string::npos) {
+            if (pos > 0) {
+                tokens.push_back(token.substr(0, pos));
+            }
+            token.erase(0, pos + 1);
+        }
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+
+    return tokens;
+}
+
+void processa_tags(HashTable<JOGADOR> &hash_id,TRIE &arvore) //insere as tags na hash e cria arquivo invertido binario
+{
+    
+    ifstream arquivo_tags("./files/tags.csv");
+    CsvParser parser_tags(arquivo_tags);
+    string str_generica_tag;
+    int id_jogador_generico;
+    JOGADOR* generico_player;
+    for(int i=0;i<4;i++)
+        parser_tags.next_field();
+
+    for(auto row:parser_tags)
+    {
+        id_jogador_generico=stoi(row[1]);
+        str_generica_tag=row[2];
+        
+        generico_player=hash_id.busca_jogador_ref(id_jogador_generico);
+        generico_player->tags.push_back(str_generica_tag);
+        arvore.insere_ordenado(arvore.get_raiz(),str_generica_tag,id_jogador_generico,0);
+    }
+
+    arquivo_tags.close();
+}
+
+void preenche_hash_id(TRIE &trie, HashTable<JOGADOR> &hash_id)
 {
     ifstream arquivo_players("./files/players.csv");
     CsvParser parser_players(arquivo_players);
@@ -125,37 +205,15 @@ void preenche_hash_id(TRIE &trie, HashTable &hash_id)
         generico.nome = row[1];
         str_generica = row[2];
         generico.posicoes.clear();
-        //retira espacos da str_generica
-        for(int i=0;i<str_generica.size();i++)
-        {
-            if(str_generica[i] == ' ')
-            {
-                str_generica.erase(i,1);
-                i--;
-            }
-        }
-        //separa as posicoes
-        for(int i=0;i<str_generica.size();i++)
-        {
-            if(str_generica[i] == ',')
-            {
-                generico.posicoes.push_back(str_generica.substr(0,i));
-                str_generica.erase(0,i+1);
-                i=0;
-            }
-            //se for a ultima posicao
-            if(i == str_generica.size()-1)
-            {
-                generico.posicoes.push_back(str_generica);
-            }
-        }
-        str_generica.clear();
+        //retira espaços
+        str_generica.erase(remove(str_generica.begin(), str_generica.end(), ' '), str_generica.end());
+        generico.posicoes=tokenize(str_generica,",");
         hash_id.insere_jogador(generico);
         trie.insere(trie.get_raiz(),generico.nome, generico.id,0);        
     }
 }
 
-void atualiza_avaliacao(HashTable &hash_id, int id, int nota)
+void atualiza_avaliacao(HashTable<JOGADOR> &hash_id, int id, int nota)
 {
     JOGADOR* pt_jg=hash_id.busca_jogador_ref(id);
     if(pt_jg)
@@ -170,7 +228,7 @@ void atualiza_avaliacao(HashTable &hash_id, int id, int nota)
     }
 }
 
-void preenche_hash_avaliacao(TRIE &trie, HashTable &hash_id, HashUser &hash_avaliacao)
+void preenche_hash_avaliacao(TRIE &trie, HashTable<JOGADOR> &hash_id, HashUser &hash_avaliacao)
 {
     ifstream arquivo_notas("./files/minirating.csv");
     CsvParser parser_notas(arquivo_notas);
@@ -202,7 +260,7 @@ void preenche_hash_avaliacao(TRIE &trie, HashTable &hash_id, HashUser &hash_aval
     }
 }
 
-void calcula_media(HashTable &hash_id) //faz a media das avaliações de cada jogador
+void calcula_media(HashTable<JOGADOR> &hash_id) //faz a media das avaliações de cada jogador
 {
     JOGADOR* pt_jg;
     for(int i=0;i<TAM_HASH_PLAYERS;i++) //percorre a tabela hash
@@ -221,16 +279,7 @@ void calcula_media(HashTable &hash_id) //faz a media das avaliações de cada jo
     }
 }
 
-template <typename T>
-bool esta_vetor(vector<T> vetor, T elemento)
-{
-    for(int i=0;i<vetor.size();i++)
-    {
-        if(vetor[i] == elemento)
-            return true;
-    }
-    return false;
-}
+
 
 /*
 // -> ordena todas as posições por rating
@@ -306,8 +355,9 @@ void answer_top_position(int n_top, string param_str){
 
 int main()
 {
-    TRIE trie;
-    HashTable hash_id(TAM_HASH_PLAYERS);
+    TRIE trie_ids;
+    TRIE arvore_tags;
+    HashTable<JOGADOR> hash_id(TAM_HASH_PLAYERS);
     JOGADOR generico;
     HashUser hash_usuarios(TAM_HASH_AVALIACAO);
     string generica;
@@ -317,10 +367,11 @@ int main()
 
     auto t_start = std::chrono::high_resolution_clock::now();
 
-    auto t_start = std::chrono::high_resolution_clock::now();
+    // auto t_start = std::chrono::high_resolution_clock::now();
 
-    preenche_hash_id(trie,hash_id);
-    preenche_hash_avaliacao(trie,hash_id,hash_usuarios);
+    preenche_hash_id(trie_ids,hash_id);
+    preenche_hash_avaliacao(trie_ids,hash_id,hash_usuarios);
+    processa_tags(hash_id,arvore_tags);
     calcula_media(hash_id);
     //classify_positions() 
 
@@ -347,7 +398,7 @@ int main()
 
         // to see all players, input ex: player ' ' -> space
         if (until_first_space == "player"){
-            printa_prefixo(trie,hash_id,param_str);
+            printa_prefixo(trie_ids,hash_id,param_str);
         }
 
         else if (until_first_space == "user"){
@@ -385,6 +436,28 @@ int main()
 
         else if (until_first_space == "tags"){
             // tags \o/
+            cout<<"procurando tags ";
+            vector<string> procura=tokenize(param_str," '");
+            for(int i=0;i<procura.size();i++)
+            {
+                cout<<procura[i]<<" ";
+            }
+            cout<<endl;
+            vector<vector<int>> ids_tags;
+            vector<int> aux;
+            cout<<procura.size()<<endl;
+            for(int i=0;i<procura.size();i++)
+            {
+                cout<<"procurando "<<procura[i]<<endl;
+                arvore_tags.acha_palavra(arvore_tags.get_raiz(),procura[i],0,aux);
+                ids_tags.push_back(aux);
+            }
+            ids=intersectionOfVectors(ids_tags);
+            for(int i=0;i<ids.size();i++)
+            {
+                cout<<"id: "<<ids[i]<<" nome: "<<hash_id.busca_jogador(ids[i]).nome<<endl;
+            }
+            
         }
 
         else{
