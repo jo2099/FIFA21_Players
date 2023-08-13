@@ -249,10 +249,6 @@ void TRIE::printa_arvore(trie_node* nodo,int indice,string generica)
     
 }
 
-// trie_node* TRIE::acha_nodo()
-
-
-
 bool TRIE::acha_palavra(trie_node* nodo, string palavra, int pos_char,vector<int> &ids) //funcao booleana que recebe a raiz da arvore, a palavra que deseja achar e a posicao do char que esta sendo analisado
 {
     if(pos_char == palavra.size()) //se pos_char for igual ao tamanho da palavra, significa que a palavra acabou e deve ser marcado o fim da palavra

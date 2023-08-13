@@ -16,6 +16,14 @@ typedef struct jogador
     int num_avaliacoes = 0;
     vector<string> tags;
 } JOGADOR;
+
+typedef struct user
+{
+    int id_user;
+    int num_avaliacoes = 0;
+    vector<tuple<int, float>> avaliacoes; // <id_player,nota> , Esse vetor deve ser ordenado pela nota
+} USER;
+
 template <typename T>
 class HashTable
 {
@@ -30,7 +38,7 @@ public:
     int get_tamanho() { return tamanho; };
     int get_num_elements() { return num_elementos; };
     int hash_function(int id);
-    void insere_jogador(JOGADOR jogador);
+    void insere(JOGADOR jogador);
     void printa_tabela();
     void printa_tabela_nomes();
     JOGADOR busca_jogador(int id);
@@ -40,7 +48,11 @@ public:
     vector<JOGADOR> get_vetor(int indice) { return tabela[indice];}
     ~HashTable();
     int hash_function(string str);
-    void insere_string(string str);
+    void insere(string str);
+    void insere_user(USER user);
+    USER busca_user(int id);
+    USER* busca_user_ref(int id);
+    void printa_user(USER user);
 };
 
 template <typename T>
@@ -68,7 +80,7 @@ int HashTable<JOGADOR>::hash_function(int id)
 }
 
 template <>
-void HashTable<JOGADOR>::insere_jogador(JOGADOR jogador)
+void HashTable<JOGADOR>::insere(JOGADOR jogador)
 {
     int indice = hash_function(jogador.id);
     tabela[indice].push_back(jogador);
@@ -188,8 +200,66 @@ int HashTable<string>::hash_function(string str)
 }
 
 template <>
-void HashTable<string>::insere_string(string str)
+void HashTable<string>::insere(string str)
 {
     int indice = hash_function(str);
     tabela[indice].push_back(str);
+}
+
+//para usuarios
+template <>
+int HashTable<USER>::hash_function(int id)
+{
+    return id % tamanho;
+}
+
+template <>
+void HashTable<USER>::insere_user(USER usuario)
+{
+    int indice = hash_function(usuario.id_user);
+    tabela[indice].push_back(usuario);
+    num_elementos++;
+}
+
+template<>
+USER HashTable<USER>::busca_user(int id)
+{
+    int indice = hash_function(id);
+    for (int i = 0; i < tabela[indice].size(); i++)
+    {
+        if (tabela[indice][i].id_user == id)
+        {
+            return tabela[indice][i];
+        }
+    }
+    USER user;
+    user.id_user = -1;
+    return user;
+}
+
+template<>
+USER* HashTable<USER>::busca_user_ref(int id)
+{
+    int indice = hash_function(id);
+    for (int i = 0; i < tabela[indice].size(); i++)
+    {
+        if (tabela[indice][i].id_user == id)
+        {
+            return &tabela[indice][i];
+        }
+    }
+    return NULL;
+}
+
+template <>
+void HashTable<USER>::printa_user(USER user)
+{
+    cout<<"ID: "<<user.id_user<<" ";
+    cout<<"Num avaliacoes: "<<user.num_avaliacoes<<" ";
+    cout<<"Avaliacoes: ";
+    for(int i=0;i<user.avaliacoes.size();i++)
+    {
+        cout<<"("<<get<0>(user.avaliacoes[i])<<","<<get<1>(user.avaliacoes[i])<<") ";
+    }
+    cout<<endl;
 }
