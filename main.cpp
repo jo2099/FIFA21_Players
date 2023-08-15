@@ -156,6 +156,30 @@ void inserirOrdenado(vector<tuple<int, float>>& vetor, tuple<int, float> novaTup
 }
 
 
+void generateSubstrings(const std::string& word, std::vector<std::string>& substrings) {
+    int n = word.length();
+    
+    for (int len = 1; len <= n; ++len) {
+        for (int i = 0; i <= n - len; ++i) {
+            std::string substring = word.substr(i, len);
+            substrings.push_back(substring);
+        }
+    }
+}
+void insere_substr(TRIE &trie,vector<string> &substr,int id)
+{
+    for(int i=0;i<substr.size();i++)
+    {
+        // if(id==20801)
+        // {
+        //     cout<<"inserindo "<<substr[i]<<endl;
+        //     system("pause");
+        // }
+        trie.insere(trie.get_raiz(),substr[i],id,0);
+    }
+}
+
+
 
 void printa_prefixo(TRIE &trie, HashTable<JOGADOR> &hash_id, string prefixo)
 {
@@ -213,12 +237,13 @@ void processa_tags(HashTable<JOGADOR> &hash_id,TRIE &arvore) //insere as tags na
     arquivo_tags.close();
 }
 
-void preenche_hash_id(TRIE &trie, HashTable<JOGADOR> &hash_id)
+void preenche_hash_id(TRIE &trie, HashTable<JOGADOR> &hash_id,TRIE &substr)
 {
     ifstream arquivo_players("./files/players.csv");
     CsvParser parser_players(arquivo_players);
     string str_generica;
     JOGADOR generico;
+    vector<string> vetor_substr;
     for(int i=0;i<4;i++)
         parser_players.next_field();
 
@@ -230,9 +255,13 @@ void preenche_hash_id(TRIE &trie, HashTable<JOGADOR> &hash_id)
         generico.posicoes.clear();
         //retira espaços
         str_generica.erase(remove(str_generica.begin(), str_generica.end(), ' '), str_generica.end());
+
         generico.posicoes=tokenize(str_generica,",");
         hash_id.insere(generico);
-        trie.insere(trie.get_raiz(),generico.nome, generico.id,0);        
+        trie.insere(trie.get_raiz(),generico.nome, generico.id,0);
+        generateSubstrings(generico.nome,vetor_substr);
+        insere_substr(substr,vetor_substr,generico.id);
+        vetor_substr.clear();        
     }
 }
 
@@ -310,6 +339,7 @@ void calcula_media(HashTable<JOGADOR> &hash_id) //faz a media das avaliações d
 
 
 
+
 /*
 // -> ordena todas as posições por rating
 void classify_positions(){
@@ -382,10 +412,12 @@ void answer_top_position(int n_top, string param_str){
 */
 
 
+
 int main()
 {
     TRIE trie_ids;
     TRIE arvore_tags;
+    TRIE arvore_prefixos;
     HashTable<JOGADOR> hash_id(TAM_HASH_PLAYERS);
     JOGADOR generico;
     HashTable<USER> hash_usuarios(TAM_HASH_AVALIACAO);
@@ -395,7 +427,8 @@ int main()
     int id_user;
 
     auto t_start = std::chrono::high_resolution_clock::now();
-    preenche_hash_id(trie_ids,hash_id);
+    preenche_hash_id(trie_ids,hash_id,arvore_prefixos);
+    // system("Pause");
     preenche_hash_avaliacao(trie_ids,hash_id,hash_usuarios);
     calcula_media(hash_id);
     processa_tags(hash_id,arvore_tags);
@@ -406,10 +439,15 @@ int main()
     cout << "Preprocessing time: " << time << endl;
       
     do{
-        cout << "Query [player,user,topN,tags,quit]:\n";
+        cout << "Query [player,user,topN,tags,substr,quit]:\n";
         string opcao;
 		getline(cin, opcao);
 
+        if(opcao=="clear")
+        {
+            system("cls");
+            continue;
+        }
         // input example: player lionel finds all players with that prefix
 
         int first_space = opcao.find_first_of(' ');
@@ -432,7 +470,6 @@ int main()
 
             USER usuario=hash_usuarios.busca_user(id_user);
             JOGADOR jogador_generico;
-            hash_usuarios.printa_user(usuario);
             //coloca os ids avaliados pelo usuario em um vetor
             //printa os jogadores com esses ids
             if(usuario.id_user == -1)
@@ -440,6 +477,7 @@ int main()
                 cout<<"usuario nao encontrado"<<endl;
                 continue;
             }
+            hash_usuarios.printa_user(usuario);
             for(int i=0;i<usuario.avaliacoes.size();i++) //percorre as avaliações do usuario
             {
                 jogador_generico=hash_id.busca_jogador(get<0>(usuario.avaliacoes[i]));
@@ -475,23 +513,40 @@ int main()
             cout<<endl;
             vector<vector<int>> ids_tags;
             vector<int> aux;
+            vector<int>intersection;
             cout<<procura.size()<<endl;
             for(int i=0;i<procura.size();i++)
             {
                 cout<<"procurando "<<procura[i]<<endl;
                 arvore_tags.acha_palavra(arvore_tags.get_raiz(),procura[i],0,aux);
                 ids_tags.push_back(aux);
+                aux.clear();
             }
-            ids=intersectionOfVectors(ids_tags);
-            for(int i=0;i<ids.size();i++)
+            intersection=intersectionOfVectors(ids_tags);
+            ids_tags.clear();
+            for(int i=0;i<intersection.size();i++)
             {
-                cout<<"id: "<<ids[i]<<" nome: "<<hash_id.busca_jogador(ids[i]).nome<<endl;
+                cout<<"id: "<<intersection[i]<<" nome: "<<hash_id.busca_jogador(intersection[i]).nome<<endl;
             }
+            intersection.clear();
             
+        }
+        else if(until_first_space=="substr")
+        {
+            vector<int> ids_substr;
+            arvore_prefixos.acha_palavra(arvore_prefixos.get_raiz(),param_str,0,ids_substr);
+            for(int i=0;i<ids_substr.size();i++)
+            {
+                cout<<"id: "<<ids_substr[i]<<" nome: "<<hash_id.busca_jogador(ids_substr[i]).nome<<endl;
+            }
+        }
+
+        else if (until_first_space == "quit"){
+            break;
         }
 
         else{
-            cout << "Try again, input not specified^2\n";
+            cout << "Invalid input\n";
         }
 
     }while (opcao != "sair");
