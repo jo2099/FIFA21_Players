@@ -53,6 +53,7 @@ public:
     USER busca_user(int id);
     USER* busca_user_ref(int id);
     void printa_user(USER user);
+    
 };
 
 template <typename T>
