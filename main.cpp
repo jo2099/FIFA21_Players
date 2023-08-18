@@ -356,13 +356,13 @@ void classify_positions(vector<JOGADOR> players_in_position[], JOGADOR pt_jg){
 
 */
 
-void calcula_media(HashTable<JOGADOR> &hash_id, vector<JOGADOR> players_in_position[]) //faz a media das avaliações de cada jogador
+void calcula_media(HashTable<JOGADOR> &hash_id, vector<JOGADOR*> players_in_position[]) //faz a media das avaliações de cada jogador
 {
     JOGADOR* pt_jg;
 
     JOGADOR* player;
-    int player_positions_id[NUM_POSITIONS];
-    int k=0;
+    vector<int> player_positions_id;
+    int size=0;
 
     for(int i=0;i<TAM_HASH_PLAYERS;i++) //percorre a tabela hash
     {
@@ -375,26 +375,27 @@ void calcula_media(HashTable<JOGADOR> &hash_id, vector<JOGADOR> players_in_posit
                 {
                     pt_jg->avaliacao = pt_jg->avaliacao/pt_jg->num_avaliacoes;
 
-                    //classify_positions(players_in_position, pt_jg);
-                    if(pt_jg->num_avaliacoes < 1000) continue;
-
-                    else{
-                        player = pt_jg;
-                        while(!player->posicoes.empty()){
-                            player_positions_id[k] = position_to_index(player->posicoes.back());
-                            player->posicoes.pop_back();
-
-                            k++;
-                        }
-
-                        for (int pos_id : player_positions_id){
-                            if(pos_id < 0 || pos_id >= NUM_POSITIONS){
-                                cout << "Invalid player position with";
-                            }
-
-                            //players_in_position[pos_id].push_back(&pt_jg);
-                        }
+                    // colocar pra mais 1000                    
+                    
+                    player = pt_jg;
+                    //cout << "jogador: " << player->nome << endl;
+                    for(int k=0;k<player->posicoes.size();k++){    
+                        //cout << player->posicoes[k] << endl;
+                        player_positions_id.push_back(position_to_index(player->posicoes[k]));
+                        //cout << player_positions_id.at(k) << endl;
+                        
                     }
+                    
+                    for (int pos_id : player_positions_id){
+                        if(pos_id < 0 || pos_id >= NUM_POSITIONS){
+                            cout << "Invalid player position with";
+                        }
+                        
+                        players_in_position[pos_id].push_back(pt_jg);
+                    } 
+
+                    player_positions_id.clear();
+                    //cout << "limpou" << endl;
 
                     if(pt_jg->avaliacao>5)
                     {
@@ -406,7 +407,41 @@ void calcula_media(HashTable<JOGADOR> &hash_id, vector<JOGADOR> players_in_posit
     }
 }
 
+/* int partition(vector<JOGADOR*> players_in_position, int start, int end){
 
+    int pivot = end;
+    int j = start;
+
+    for(int i=start;i<end;i++){
+        if(players_in_position[i]->avaliacao < players_in_position[pivot]->avaliacao){
+            swap(players_in_position[i], players_in_position[j]);
+            j++;
+        } 
+    }
+    swap(players_in_position[j], players_in_position[pivot]);
+    return j;
+}
+
+*/
+
+void quicksort(vector<JOGADOR*> players_in_position, int start, int end){
+
+    /*if (start<end){
+        int p = partition(players_in_position, start, end);
+        quicksort(players_in_position, start, p-1);
+        quicksort(players_in_position, p+1, end);
+    }*/
+    cout << "entrou quicksort emmm" << endl;
+}
+
+void sort_players_positions(vector<JOGADOR*> players_in_position[]){
+
+    cout << "entrou no sort geral" << endl;
+    for(int i=0; i<NUM_POSITIONS; i++){
+        quicksort(players_in_position[i], 0, players_in_position[i].size());
+    } 
+    
+}
 
 
 /*
@@ -441,7 +476,6 @@ void answer_top_position(int n_top, string param_str){
 */
 
 
-
 int main()
 {
     TRIE trie_ids;
@@ -455,7 +489,9 @@ int main()
     vector<int> ids;
     int id_user;
     //vector<vector<JOGADOR>> players_in_position;
-    vector<JOGADOR> players_in_position[NUM_POSITIONS];
+    vector<JOGADOR*> players_in_position[NUM_POSITIONS];
+
+    JOGADOR* teste;
 
     auto t_start = std::chrono::high_resolution_clock::now();
     preenche_hash_id(trie_ids,hash_id,arvore_prefixos);
@@ -463,6 +499,7 @@ int main()
     preenche_hash_avaliacao(trie_ids,hash_id,hash_usuarios);
     calcula_media(hash_id, players_in_position);
     processa_tags(hash_id,arvore_tags);
+    sort_players_positions(players_in_position);
 
     auto t_end = std::chrono::high_resolution_clock::now();
     double time = std::chrono::duration<double, std::milli>(t_end-t_start).count();
@@ -524,6 +561,20 @@ int main()
 
             cout << n_top << endl;
             cout << param_str << endl;
+
+            int pos_id=position_to_index(param_str);
+            cout << pos_id << endl;
+
+            cout << players_in_position[pos_id].size();
+
+            for(int k=0; k<players_in_position[pos_id].size(); k++){
+                teste = players_in_position[pos_id].at(k);
+                cout << "jogador: " << teste->nome << endl;
+                cout << "rating: " << teste->avaliacao << endl;
+
+            }
+
+            //hash_id.printa_jogador(players_in_position[pos_id].at(0));
 
            // answer_top_position(/*passar o vetor de todas as posições ordenadas*/, n_top, param_str);
         }
