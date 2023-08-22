@@ -4,10 +4,10 @@
 #include <string>
 #include <vector>
 #include <chrono>
-#include"parsing.hpp"
+// #include"parsing.hpp"
+#include"parser.hpp"
 #include"trie.hpp"
 #include"HashTable.hpp"
-// #include"HashUsers.hpp"
 #include <chrono>
 #include<algorithm>
 #include<sstream>
@@ -97,9 +97,11 @@ CF
 */
 
 #define TAM_HASH_PLAYERS 10000
-#define TAM_HASH_AVALIACAO 4007
+#define TAM_HASH_AVALIACAO 1005007
 
 #define NUM_POSITIONS 15
+
+#define NAME_RATING "./files/rating.csv"
 
 
 
@@ -261,17 +263,15 @@ void preenche_hash_id(TRIE &trie, HashTable<JOGADOR> &hash_id,TRIE &substr)
         generico.posicoes=tokenize(str_generica,",");
         hash_id.insere(generico);
         trie.insere(trie.get_raiz(),generico.nome, generico.id,0);
-        generateSubstrings(generico.nome,vetor_substr);
-        insere_substr(substr,vetor_substr,generico.id);
+        // generateSubstrings(generico.nome,vetor_substr);
+        // insere_substr(substr,vetor_substr,generico.id);
         vetor_substr.clear();        
     }
 }
 
-void atualiza_avaliacao(HashTable<JOGADOR> &hash_id, int id, int nota)
+void atualiza_avaliacao(HashTable<JOGADOR> &hash_id, int id, float nota)
 {
     JOGADOR* pt_jg=hash_id.busca_jogador_ref(id);
-    JOGADOR jogador_generico;
-    jogador_generico=hash_id.busca_jogador(id);
     if(pt_jg)
     {
         pt_jg->avaliacao += nota;
@@ -286,33 +286,45 @@ void atualiza_avaliacao(HashTable<JOGADOR> &hash_id, int id, int nota)
 
 void preenche_hash_avaliacao(TRIE &trie, HashTable<JOGADOR> &hash_id, HashTable<USER> &hash_avaliacao)
 {
-    ifstream arquivo_notas("./files/minirating.csv");
+    ifstream arquivo_notas(NAME_RATING);
     CsvParser parser_notas(arquivo_notas);
     JOGADOR jogador_generico;
+    pair<int,float> par_generica;
     USER* pt_user;
     USER usuario_generico;
+    int id_user;
+    int i=0;
+    int id_jogador_generico;
+    float nota;
     vector<int> ids;
-    int user_id,player_id,nota;
     for(int i=0;i<4;i++)
         parser_notas.next_field();
     for(auto row:parser_notas)
     {
-        usuario_generico.id_user = stoi(row[0]); //pega o id do usuario
-        if(hash_avaliacao.busca_user(usuario_generico.id_user).id_user == -1) //se o usuario não estiver na hash
+        id_user = stoi(row[0]); //pega o id do usuario
+        par_generica.first = stoi(row[1]); //pega o id do jogador
+        par_generica.second = stof(row[2]); //pega a nota
+        if(!hash_avaliacao.tem_user(id_user)) //se o usuario não estiver na hash
         {
             usuario_generico.num_avaliacoes++;
-            inserirOrdenado(usuario_generico.avaliacoes,make_tuple(stoi(row[1]),stoi(row[2])));
+            // inserirOrdenado(usuario_generico.avaliacoes,make_tuple(stoi(row[1]),stoi(row[2])));
+            // usuario_generico.avaliacoes.push_back(par_generica);
             hash_avaliacao.insere_user(usuario_generico);
-            atualiza_avaliacao(hash_id,stoi(row[1]),stoi(row[2]));
+            atualiza_avaliacao(hash_id,par_generica.first,par_generica.second);
         }
         else
         {
             pt_user=hash_avaliacao.busca_user_ref(usuario_generico.id_user);
             pt_user->num_avaliacoes++;
-            inserirOrdenado(pt_user->avaliacoes,make_tuple(stoi(row[1]),stoi(row[2])));
-            atualiza_avaliacao(hash_id,stoi(row[1]),stoi(row[2]));
+            // pt_user->avaliacoes.insert(par_generica);
+            // inserirOrdenado(pt_user->avaliacoes,make_tuple(stoi(row[1]),stoi(row[2])));
+            // pt_user->avaliacoes.push_back(par_generica);
+            atualiza_avaliacao(hash_id,par_generica.first,par_generica.second);
+            
+
         }
         usuario_generico.avaliacoes.clear();
+        usuario_generico.num_avaliacoes=0;
     }
 }
 
@@ -347,7 +359,7 @@ void insert_players(vector<JOGADOR*> &players_in_position, JOGADOR* new_player){
 
 }
 
-void calcula_media(HashTable<JOGADOR> &hash_id, vector<JOGADOR*> players_in_position[]) //faz a media das avaliações de cada jogador
+void calcula_media(HashTable<JOGADOR> &hash_id, vector<JOGADOR*> players_in_position[],vector<HashTable<int>> &hash_posicoes) //faz a media das avaliações de cada jogador
 {
     JOGADOR* pt_jg;
 
@@ -366,40 +378,47 @@ void calcula_media(HashTable<JOGADOR> &hash_id, vector<JOGADOR*> players_in_posi
                 {
                     pt_jg->avaliacao = pt_jg->avaliacao/pt_jg->num_avaliacoes;
 
+                    player = pt_jg;
                     // COLOCAR ESSA PARTE AQUI QUANDO FOR TESTAR NO RATING GRANDE
-                    /* if(pt_jg->num_avaliacoes > 1000){
-                        player = pt_jg;
+
+                     if(pt_jg->num_avaliacoes > 1000){
                         //cout << "jogador: " << player->nome << endl;
                         for(int k=0;k<player->posicoes.size();k++){    
                             //cout << player->posicoes[k] << endl;
-                            player_positions_id.push_back(position_to_index(player->posicoes[k]));
+
+                            // player_positions_id.push_back(position_to_index(player->posicoes[k]));
+                            
+                            int pos_id = position_to_index(player->posicoes[k]);
+
+                            hash_posicoes[pos_id].insere(player->id);
+
                             //cout << player_positions_id.at(k) << endl;
                         }
                     
-                        for (int pos_id : player_positions_id){
-                            if(pos_id < 0 || pos_id >= NUM_POSITIONS){
-                                cout << "Invalid player position with";
-                            }
-                            insert_players(players_in_position[pos_id], pt_jg);
-                        }
-                        
-                        player_positions_id.clear();
-                    }   */                
-                    
-                    player = pt_jg;
+                        // for (int pos_id : player_positions_id){
+                        //     if(pos_id < 0 || pos_id >= NUM_POSITIONS){
+                        //         cout << "Invalid player position with";
+                        //     }
 
-                    for(int k=0;k<player->posicoes.size();k++){    
-                        player_positions_id.push_back(position_to_index(player->posicoes[k]));  
-                    }
-                    
-                    for (int pos_id : player_positions_id){
-                        if(pos_id < 0 || pos_id >= NUM_POSITIONS){
-                            cout << "Invalid player position with";
-                        }
-                        insert_players(players_in_position[pos_id], pt_jg);
-                    }
+                        //     insert_players(players_in_position[pos_id], pt_jg);
+                        // }
                         
-                    player_positions_id.clear();
+                        // player_positions_id.clear();
+                    }               
+                    
+
+                    // for(int k=0;k<player->posicoes.size();k++){  //percorre as posições do jogador  
+                    //     player_positions_id.push_back(position_to_index(player->posicoes[k]));  //pega o id da posição
+                    // }
+                    
+                    // for (int pos_id : player_positions_id){
+                    //     if(pos_id < 0 || pos_id >= NUM_POSITIONS){
+                    //         cout << "Invalid player position with";
+                    //     }
+                    //     insert_players(players_in_position[pos_id], pt_jg); //insere o jogador na posição
+                    // }
+                        
+                    // player_positions_id.clear();
 
                     if(pt_jg->avaliacao>5)
                     {
@@ -451,16 +470,37 @@ int main()
     vector<int> ids;
     int id_user;
     //vector<vector<JOGADOR>> players_in_position;
-    vector<JOGADOR*> players_in_position[NUM_POSITIONS];
+    vector<JOGADOR*> players_in_position[NUM_POSITIONS]; //vetor de vetores de jogadores, cada vetor representa uma posição
+
+    //vetor de tabelas hash para as posicoes, cada uma com TAM_HASH_PLAYERS posições
+    vector<HashTable<int>> hash_posicoes(NUM_POSITIONS,HashTable<int>(TAM_HASH_PLAYERS));
 
     //JOGADOR* teste;
 
     auto t_start = std::chrono::high_resolution_clock::now();
     preenche_hash_id(trie_ids,hash_id,arvore_prefixos);
-    // system("Pause");
+    auto t_end1 = std::chrono::high_resolution_clock::now();
+    double time1 = std::chrono::duration<double, std::milli>(t_end1-t_start).count();
+    cout << "Preprocessing time_hash_id: " << time1 << endl;
+
+    auto t_start2 = std::chrono::high_resolution_clock::now();    
     preenche_hash_avaliacao(trie_ids,hash_id,hash_usuarios);
-    calcula_media(hash_id, players_in_position);
+    auto t_end2 = std::chrono::high_resolution_clock::now();
+    double time2 = std::chrono::duration<double, std::milli>(t_end2-t_start2).count();
+    cout << "Preprocessing time_hash_avaliacao: " << time2 << endl;
+
+    auto t_start3 = std::chrono::high_resolution_clock::now();
+    calcula_media(hash_id, players_in_position,hash_posicoes);
+    auto t_end3 = std::chrono::high_resolution_clock::now();
+    double time3 = std::chrono::duration<double, std::milli>(t_end3-t_start3).count();
+    cout << "Preprocessing time_calcula_media: " << time3 << endl;
+
+    auto t_start4 = std::chrono::high_resolution_clock::now();
     processa_tags(hash_id,arvore_tags);
+    auto t_end4 = std::chrono::high_resolution_clock::now();
+    double time4 = std::chrono::duration<double, std::milli>(t_end4-t_start4).count();
+    cout << "Preprocessing time_processa_tags: " << time4 << endl;
+
 
     //sort_players_positions(players_in_position);
 
@@ -507,14 +547,14 @@ int main()
                 cout<<"usuario nao encontrado"<<endl;
                 continue;
             }
-            hash_usuarios.printa_user(usuario);
+            // hash_usuarios.printa_user(usuario);
             for(int i=0;i<usuario.avaliacoes.size();i++) //percorre as avaliações do usuario
             {
-                jogador_generico=hash_id.busca_jogador(get<0>(usuario.avaliacoes[i]));
+                // jogador_generico=hash_id.busca_jogador(get<0>(usuario.avaliacoes[i]));
                 cout<<"nome: "<<jogador_generico.nome;
                 cout<<" global rating: "<<jogador_generico.avaliacao;
                 cout<<" count: "<<jogador_generico.num_avaliacoes;
-                cout<<" rating: "<<get<1>(usuario.avaliacoes[i])<<endl;
+                // cout<<" rating: "<<get<1>(usuario.avaliacoes[i])<<endl;
             }
         }
 

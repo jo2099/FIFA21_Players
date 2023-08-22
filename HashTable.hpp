@@ -2,6 +2,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include"arvore.hpp"
+#include<set>
 
 using namespace std;
 
@@ -21,7 +23,10 @@ typedef struct user
 {
     int id_user;
     int num_avaliacoes = 0;
-    vector<tuple<int, float>> avaliacoes; // <id_player,nota> , Esse vetor deve ser ordenado pela nota
+    /*vector<pair<int, float>> avaliacoes; // <id_player,nota> , Esse vetor deve ser ordenado pela nota
+    RubroNegra<pair<int, float>> arvore_avaliacoes; // <id_player,nota>
+    */
+    set<pair<int, float>> avaliacoes;
 } USER;
 
 template <typename T>
@@ -52,7 +57,10 @@ public:
     void insere_user(USER user);
     USER busca_user(int id);
     USER* busca_user_ref(int id);
-    void printa_user(USER user);
+    // void printa_user(USER user);
+    void set_tamanho(int tam){tamanho = tam;};
+    void insere(int id);
+    bool tem_user(int id);
     
 };
 
@@ -252,15 +260,46 @@ USER* HashTable<USER>::busca_user_ref(int id)
     return NULL;
 }
 
-template <>
-void HashTable<USER>::printa_user(USER user)
+// template <>
+// void HashTable<USER>::printa_user(USER user)
+// {
+//     cout<<"ID: "<<user.id_user<<" ";
+//     cout<<"Num avaliacoes: "<<user.num_avaliacoes<<" ";
+//     cout<<"Avaliacoes: ";
+//     for(int i=0;i<user.avaliacoes.size();i++)
+//     {
+//         cout<<"("<<get<0>(user.avaliacoes[i])<<","<<get<1>(user.avaliacoes[i])<<") ";
+//     }
+//     cout<<endl;
+// }
+
+template<>
+bool HashTable<USER>::tem_user(int id)
 {
-    cout<<"ID: "<<user.id_user<<" ";
-    cout<<"Num avaliacoes: "<<user.num_avaliacoes<<" ";
-    cout<<"Avaliacoes: ";
-    for(int i=0;i<user.avaliacoes.size();i++)
+    int indice = hash_function(id);
+    for (int i = 0; i < tabela[indice].size(); i++)
     {
-        cout<<"("<<get<0>(user.avaliacoes[i])<<","<<get<1>(user.avaliacoes[i])<<") ";
+        if (tabela[indice][i].id_user == id)
+        {
+            return true;
+        }
     }
-    cout<<endl;
+    return false;
+}
+
+
+//para ints
+
+template<>
+int HashTable<int>::hash_function(int id)
+{
+    return id % tamanho;
+}
+
+template<>
+void HashTable<int>::insere(int id)
+{
+    int indice = hash_function(id);
+    tabela[indice].push_back(id);
+    num_elementos++;
 }
