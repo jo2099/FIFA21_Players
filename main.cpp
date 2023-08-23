@@ -10,6 +10,7 @@
 #include <chrono>
 #include<algorithm>
 #include<sstream>
+#include <iomanip>
 
 using namespace std;
 using namespace aria::csv; //parser
@@ -20,6 +21,8 @@ using namespace aria::csv; //parser
 #define NUM_POSITIONS 15
 
 #define NOME_AV "./files/rating.csv"
+
+#define SEPARADOR " | "
 
 
 
@@ -101,15 +104,33 @@ void insere_substr(TRIE &trie,vector<string> &substr,int id)
     }
 }
 
+string get_position_string(JOGADOR player){
+    string str= "";
+	if (player.posicoes.size() > 0) {
+		str += player.posicoes[0];
+		for (int i = 1; i < player.posicoes.size(); ++i) {
+			str += ',';
+			str += player.posicoes[i];
+		}
 
+	}
+	return str;
+}
 
 void printa_prefixo(TRIE &trie, HashTable<JOGADOR> &hash_id, string prefixo)
 {
     vector<int> ids; 
     trie.get_jogadores_prefixo(trie.get_raiz(),prefixo,0,ids);
+
+    //get_position_string(hash_id.busca_jogador(ids[i]))
+
     for(int i=0;i<ids.size();i++)
     {
-        cout<<"id: "<<ids[i]<<" nome: "<<hash_id.busca_jogador(ids[i]).nome<<" posicao: "<<hash_id.busca_jogador(ids[i]).posicoes[0]<<" rating: "<<hash_id.busca_jogador(ids[i]).avaliacao<<" count: "<<hash_id.busca_jogador(ids[i]).num_avaliacoes<<endl;
+        cout << "ID: " << setw(6) << ids[i] << SEPARADOR;
+        cout << "Name: " << setw(38) << hash_id.busca_jogador(ids[i]).nome << SEPARADOR;
+        cout << "Position: " << setw(20) << get_position_string(hash_id.busca_jogador(ids[i])) << SEPARADOR;
+        cout << "Rating: " << setw(10) << hash_id.busca_jogador(ids[i]).avaliacao << SEPARADOR; 
+        cout << "Count: " << setw(5) << hash_id.busca_jogador(ids[i]).num_avaliacoes << endl;
     }
 }
 
@@ -333,6 +354,27 @@ void calcula_media(HashTable<JOGADOR> &hash_id, vector<JOGADOR*> players_in_posi
     }
 }
 
+string get_position_string_ref(JOGADOR* player){
+    string str= "";
+	if (player->posicoes.size() > 0) {
+		str += player->posicoes[0];
+		for (int i = 1; i < player->posicoes.size(); ++i) {
+			str += ',';
+			str += player->posicoes[i];
+		}
+
+	}
+	return str;
+}
+
+void answer_user_query(JOGADOR player){
+
+    cout << "ID: " << setw(6) << player.id << SEPARADOR;
+    cout << "Name: " << setw(38) << player.nome << SEPARADOR;
+    cout << "Global Rating: " << setw(15) << player.avaliacao << SEPARADOR;
+    cout << "Count: " << setw(11) << player.num_avaliacoes << SEPARADOR; 
+}
+
 void answer_top_query(vector<JOGADOR*> &players_in_position, int n_top){
 
     JOGADOR* teste;
@@ -343,22 +385,23 @@ void answer_top_query(vector<JOGADOR*> &players_in_position, int n_top){
 
     for (int k=0; k < n_top; k++){
         teste = players_in_position.at(k);
-        cout << "ID: " << teste->id << endl;
-        cout << "Name: " << teste->nome << endl;
-        cout << "Positions: ";
-        for (int position = 0; position < teste->posicoes.size(); position++){
-            if (position+1 == teste->posicoes.size()){
-                cout << teste->posicoes[position]<<" ";
-            }
-            else
-                cout << teste->posicoes[position]<<", ";
-        }
-        cout << endl;
-        cout << "Rating: " << teste->avaliacao << endl;
-        cout << "Count: " << teste->num_avaliacoes << endl;
-        cout << endl;
+        cout << "ID: " << setw(6) << teste->id << SEPARADOR;
+        cout << "Name: " << setw(38) << teste->nome << SEPARADOR;
+        cout << "Positions: " << setw(20) << get_position_string_ref(teste) << SEPARADOR;
+        cout << "Rating: " << setw(10) << teste->avaliacao << SEPARADOR; 
+        cout << "Count: " << setw(5) << teste->num_avaliacoes << endl;
     } 
 }
+
+void answer_tags_substr_query(JOGADOR player){
+
+    cout << "ID: " << setw(6) << player.id << SEPARADOR;
+    cout << "Name: " << setw(38) << player.nome << SEPARADOR;
+    cout << "Position: " << setw(20) << get_position_string(player) << SEPARADOR;
+    cout << "Rating: " << setw(10) << player.avaliacao << SEPARADOR; 
+    cout << "Count: " << setw(5) << player.num_avaliacoes << endl;
+}
+
 
 int main()
 {
@@ -378,24 +421,30 @@ int main()
     //JOGADOR* teste;
 
     auto t_start = std::chrono::high_resolution_clock::now();
+
     preenche_hash_id(trie_ids,hash_id,arvore_prefixos);
     auto t_1 = std::chrono::high_resolution_clock::now();
-    double time1 = std::chrono::duration<double, std::milli>(t_1-t_start).count();
-    cout<<"tempo hash id:"<<time1<<endl;
+    double time1 = std::chrono::duration<double>(t_1-t_start).count();
+    cout << "How long it took to populate the ID Hash (in seconds): " << time1 << endl;
+
     preenche_hash_avaliacao(trie_ids,hash_id,hash_usuarios);
     auto t_2 = std::chrono::high_resolution_clock::now();
-    double time2 = std::chrono::duration<double, std::milli>(t_2-t_1).count();
-    cout<<"tempo hash av:"<<time2<<endl;
+    double time2 = std::chrono::duration<double>(t_2-t_1).count();
+    cout << "How long it took to populate the AV Hash (in seconds): " << time2 << endl;
+
     calcula_media(hash_id, players_in_position);
     auto t_3 = std::chrono::high_resolution_clock::now();
-    double time3 = std::chrono::duration<double, std::milli>(t_3-t_2).count();
-    cout<<"tempo media:"<<time3<<endl;
+    double time3 = std::chrono::duration<double>(t_3-t_2).count();
+    
     processa_tags(hash_id,arvore_tags);
     auto t_end = std::chrono::high_resolution_clock::now();
-    double time4 = std::chrono::duration<double, std::milli>(t_end-t_3).count();
-    cout<<"tempo das tags"<<time4<<endl;
-    double time = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-    cout << "Preprocessing time: " << time << endl;
+    double time4 = std::chrono::duration<double>(t_end-t_3).count();
+    cout << "How long it took to analyze tags.csv (in seconds): " << time4 << endl;
+
+    cout << "How long it took to process player's ratings and positions (in seconds): " << time3 << endl;
+
+    double time = std::chrono::duration<double>(t_end-t_start).count();
+    cout << "Total preprocessing time (in seconds): " << time << endl;
       
     do{
         cout << "Query [player,user,topN,tags,substr,quit]:\n";
@@ -410,10 +459,10 @@ int main()
         // input example: player lionel finds all players with that prefix
 
         int first_space = opcao.find_first_of(' ');
-        if(first_space == -1){
+        /* if(first_space == -1){
             cout << "Try again, input not specified\n";
             continue;
-        } 
+        }  */
 
         // Separates the input
         string until_first_space = opcao.substr(0, first_space);
@@ -433,18 +482,16 @@ int main()
             //printa os jogadores com esses ids
             if(usuario.id_user == -1)
             {
-                cout<<"usuario nao encontrado"<<endl;
+                cout<<"User not found"<<endl;
                 continue;
             }
             // hash_usuarios.printa_user(usuario);
             for(int i=0;i<usuario.avaliacoes.size();i++) //percorre as avaliações do usuario
             {
                 jogador_generico=hash_id.busca_jogador(get<0>(usuario.avaliacoes[i]));
-                cout<<"id: "<<jogador_generico.id;
-                cout<<" nome: "<<jogador_generico.nome;
-                cout<<" global rating: "<<jogador_generico.avaliacao;
-                cout<<" count: "<<jogador_generico.num_avaliacoes;
-                cout<<" rating: "<<get<1>(usuario.avaliacoes[i])<<"\n\n";
+
+                answer_user_query(jogador_generico);
+                cout << "Rating: " << setw(5) << get<1>(usuario.avaliacoes[i]) << endl;
             }
         }
 
@@ -492,14 +539,9 @@ int main()
             ids_tags.clear();
             for(int i=0;i<intersection.size();i++)
             {
-                cout<<"id: "<<intersection[i]<<" nome: "<<hash_id.busca_jogador(intersection[i]).nome;
-                cout<<" posicoes: ";
-                for(int j=0;j<hash_id.busca_jogador(intersection[i]).posicoes.size();j++)
-                {
-                    cout<<hash_id.busca_jogador(intersection[i]).posicoes[j]<<" ";
-                }
-                cout<<" rating: "<<hash_id.busca_jogador(intersection[i]).avaliacao;
-                cout<<" count: "<<hash_id.busca_jogador(intersection[i]).num_avaliacoes<<endl;
+
+                answer_tags_substr_query(hash_id.busca_jogador(intersection[i]));
+                
             }
             intersection.clear();
             
@@ -510,30 +552,21 @@ int main()
             arvore_prefixos.acha_palavra(arvore_prefixos.get_raiz(),param_str,0,ids_substr);
             for(int i=0;i<ids_substr.size();i++)
             {
-                cout<<"id: "<<ids_substr[i]<<" nome: "<<hash_id.busca_jogador(ids_substr[i]).nome;
-                cout<<" posicoes: ";
-                for(int j=0;j<hash_id.busca_jogador(ids_substr[i]).posicoes.size();j++)
-                {
-                    cout<<hash_id.busca_jogador(ids_substr[i]).posicoes[j]<<" ";
-                }
-                cout<<" rating: "<<hash_id.busca_jogador(ids_substr[i]).avaliacao;
-                cout<<" count: "<<hash_id.busca_jogador(ids_substr[i]).num_avaliacoes<<endl;
+
+                answer_tags_substr_query(hash_id.busca_jogador(ids_substr[i]));
             }
         }
 
         else if (until_first_space == "quit"){
             break;
-        }
+        } 
 
         else{
             cout << "Invalid input\n";
         }
 
-    }while (opcao != "sair");
+    }while (opcao != "quit");
     cout << "Ending operation\n";
-      
-    
 
-    cout<<"\noi\n";
     return 0;
 }
