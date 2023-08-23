@@ -53,6 +53,7 @@ public:
     USER busca_user(int id);
     USER* busca_user_ref(int id);
     void printa_user(USER user);
+    bool tem_user(int id);
     
 };
 
@@ -263,4 +264,18 @@ void HashTable<USER>::printa_user(USER user)
         cout<<"("<<get<0>(user.avaliacoes[i])<<","<<get<1>(user.avaliacoes[i])<<") ";
     }
     cout<<endl;
+}
+
+template<>
+bool HashTable<USER>::tem_user(int id)
+{
+    int indice = hash_function(id);
+    for (int i = 0; i < tabela[indice].size(); i++)
+    {
+        if (tabela[indice][i].id_user == id)
+        {
+            return true;
+        }
+    }
+    return false;
 }

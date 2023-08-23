@@ -7,7 +7,6 @@
 #include"parsing.hpp"
 #include"trie.hpp"
 #include"HashTable.hpp"
-// #include"HashUsers.hpp"
 #include <chrono>
 #include<algorithm>
 #include<sstream>
@@ -15,91 +14,12 @@
 using namespace std;
 using namespace aria::csv; //parser
 
-/*
-
-organização:
-
-1. dados
-    - usar o parser pra ler o csv
-    https://github.com/AriaFallah/csv-parser/blob/master/parser.hpp
-
-2. pesquisa
-    1. por nome (prefixo): $ player <nome>
-        - aparecer todos os jogadores que tem aquele prefixo (se tiver espaço incluir também? tipo jo elmano e joel?)
-            - mostrar id, nome, posição (que pode ser uma ou mais), avaliação e contador de avaliação
-
-    2. por avaliação de usuário: $ <user> <nota>
-        - aparecer no máx 20 jogadores avaliados pelo user
-        ? acho que é pra pegar todos os jogadores com nota >= a <nota> e colocar em ordem decrescente de acordo com a nota
-
-    3. por posição: $ top<n> <posição>
-        - <n> é quantos jogadores tem que aparecer
-        - jogadores com no mínimo 1000 avaliações
-        - ordenado de maior pra menor avaliação
-
-    4. por tags: $ tags <list of tags>
-        - mostrar todos os jogadores com aquelas tags, não tem ordem especificada
-
-pré-processamento:
-    - 2.1 e 2.3: calcular a quantidade e média de avaliações de cada jogador -> HASH?
-    - 2.2: separar todos os jogadores avaliados por cada usuário -> B-TREE pra cada usuário? acho complicado demais
-                                                                 -> HASH? 
-
-    não é explícito que tem que fazer isso no pré-processamento, e como tem limite de tempo, 
-    tem que ver se vale a pena fazer aqui ou durante a pesquisa mesmo
-    - 2.4: separar tags e quais jogadores cada uma tem -> PATRICIA? deixa no último nodo uma lista com o id dos jogadores
-
-3. implementação
-    - fase 1: inicialização e construção de estruturas em até 3 minutos, menos de 1 minuto é +10% de nota
-    - fase 2: consulta
-
-    extra: consulta extras e interface gráfica é +20% de nota extra
-
-4. entrega
-    - os dois tem que tá presentes
-    - explicar a 2
-    - rodar \o/
-
-
-observações: 
-dados a serem guardados para cada jogador
-    - id
-    - nome
-    - posição
-    - avaliação(media das avaliações)
-    - contador de avaliações
-    - tags
-
-nome->arvore trie
-id->hash e arvore trie(nos nodos terminadores)
-posição->hash
-avaliação->hash
-contador de avaliações->hash
-
-*/
-
-/*
-CM
-CDM
-GK
-CAM
-RB
-LB
-LWB
-CB
-RM
-LM
-LW
-RW
-ST
-RWB
-CF
-*/
 
 #define TAM_HASH_PLAYERS 10000
-#define TAM_HASH_AVALIACAO 4007
-
+#define TAM_HASH_AVALIACAO 1004007
 #define NUM_POSITIONS 15
+
+#define NOME_AV "./files/rating.csv"
 
 
 
@@ -265,13 +185,12 @@ void preenche_hash_id(TRIE &trie, HashTable<JOGADOR> &hash_id,TRIE &substr)
         insere_substr(substr,vetor_substr,generico.id);
         vetor_substr.clear();        
     }
+    arquivo_players.close();
 }
 
-void atualiza_avaliacao(HashTable<JOGADOR> &hash_id, int id, int nota)
+void atualiza_avaliacao(HashTable<JOGADOR> &hash_id, int id, float nota)
 {
     JOGADOR* pt_jg=hash_id.busca_jogador_ref(id);
-    JOGADOR jogador_generico;
-    jogador_generico=hash_id.busca_jogador(id);
     if(pt_jg)
     {
         pt_jg->avaliacao += nota;
@@ -286,34 +205,37 @@ void atualiza_avaliacao(HashTable<JOGADOR> &hash_id, int id, int nota)
 
 void preenche_hash_avaliacao(TRIE &trie, HashTable<JOGADOR> &hash_id, HashTable<USER> &hash_avaliacao)
 {
-    ifstream arquivo_notas("./files/minirating.csv");
+    ifstream arquivo_notas(NOME_AV);
     CsvParser parser_notas(arquivo_notas);
     JOGADOR jogador_generico;
     USER* pt_user;
     USER usuario_generico;
     vector<int> ids;
-    int user_id,player_id,nota;
+    int user_id,player_id;
+    float nota;
     for(int i=0;i<4;i++)
         parser_notas.next_field();
     for(auto row:parser_notas)
     {
         usuario_generico.id_user = stoi(row[0]); //pega o id do usuario
-        if(hash_avaliacao.busca_user(usuario_generico.id_user).id_user == -1) //se o usuario não estiver na hash
+        if(!hash_avaliacao.tem_user(usuario_generico.id_user)) //se o usuario não estiver na hash
         {
             usuario_generico.num_avaliacoes++;
-            inserirOrdenado(usuario_generico.avaliacoes,make_tuple(stoi(row[1]),stoi(row[2])));
+            inserirOrdenado(usuario_generico.avaliacoes,make_tuple(stoi(row[1]),stof(row[2])));
             hash_avaliacao.insere_user(usuario_generico);
-            atualiza_avaliacao(hash_id,stoi(row[1]),stoi(row[2]));
+            atualiza_avaliacao(hash_id,stoi(row[1]),stof(row[2]));
         }
         else
         {
             pt_user=hash_avaliacao.busca_user_ref(usuario_generico.id_user);
             pt_user->num_avaliacoes++;
-            inserirOrdenado(pt_user->avaliacoes,make_tuple(stoi(row[1]),stoi(row[2])));
-            atualiza_avaliacao(hash_id,stoi(row[1]),stoi(row[2]));
+            inserirOrdenado(pt_user->avaliacoes,make_tuple(stoi(row[1]),stof(row[2])));
+            atualiza_avaliacao(hash_id,stoi(row[1]),stof(row[2]));
         }
         usuario_generico.avaliacoes.clear();
+        usuario_generico.num_avaliacoes=0;
     }
+    arquivo_notas.close();
 }
 
 int position_to_index(const string& pos) {
@@ -367,7 +289,7 @@ void calcula_media(HashTable<JOGADOR> &hash_id, vector<JOGADOR*> players_in_posi
                     pt_jg->avaliacao = pt_jg->avaliacao/pt_jg->num_avaliacoes;
 
                     // COLOCAR ESSA PARTE AQUI QUANDO FOR TESTAR NO RATING GRANDE
-                    /* if(pt_jg->num_avaliacoes > 1000){
+                     if(pt_jg->num_avaliacoes > 1000){
                         player = pt_jg;
                         //cout << "jogador: " << player->nome << endl;
                         for(int k=0;k<player->posicoes.size();k++){    
@@ -384,22 +306,22 @@ void calcula_media(HashTable<JOGADOR> &hash_id, vector<JOGADOR*> players_in_posi
                         }
                         
                         player_positions_id.clear();
-                    }   */                
+                    }                  
                     
-                    player = pt_jg;
+                    // player = pt_jg;
 
-                    for(int k=0;k<player->posicoes.size();k++){    
-                        player_positions_id.push_back(position_to_index(player->posicoes[k]));  
-                    }
+                    // for(int k=0;k<player->posicoes.size();k++){    
+                    //     player_positions_id.push_back(position_to_index(player->posicoes[k]));  
+                    // }
                     
-                    for (int pos_id : player_positions_id){
-                        if(pos_id < 0 || pos_id >= NUM_POSITIONS){
-                            cout << "Invalid player position with";
-                        }
-                        insert_players(players_in_position[pos_id], pt_jg);
-                    }
+                    // for (int pos_id : player_positions_id){
+                    //     if(pos_id < 0 || pos_id >= NUM_POSITIONS){
+                    //         cout << "Invalid player position with";
+                    //     }
+                    //     insert_players(players_in_position[pos_id], pt_jg);
+                    // }
                         
-                    player_positions_id.clear();
+                    // player_positions_id.clear();
 
                     if(pt_jg->avaliacao>5)
                     {
@@ -457,14 +379,21 @@ int main()
 
     auto t_start = std::chrono::high_resolution_clock::now();
     preenche_hash_id(trie_ids,hash_id,arvore_prefixos);
-    // system("Pause");
+    auto t_1 = std::chrono::high_resolution_clock::now();
+    double time1 = std::chrono::duration<double, std::milli>(t_1-t_start).count();
+    cout<<"tempo hash id:"<<time1<<endl;
     preenche_hash_avaliacao(trie_ids,hash_id,hash_usuarios);
+    auto t_2 = std::chrono::high_resolution_clock::now();
+    double time2 = std::chrono::duration<double, std::milli>(t_2-t_1).count();
+    cout<<"tempo hash av:"<<time2<<endl;
     calcula_media(hash_id, players_in_position);
+    auto t_3 = std::chrono::high_resolution_clock::now();
+    double time3 = std::chrono::duration<double, std::milli>(t_3-t_2).count();
+    cout<<"tempo media:"<<time3<<endl;
     processa_tags(hash_id,arvore_tags);
-
-    //sort_players_positions(players_in_position);
-
     auto t_end = std::chrono::high_resolution_clock::now();
+    double time4 = std::chrono::duration<double, std::milli>(t_end-t_3).count();
+    cout<<"tempo das tags"<<time4<<endl;
     double time = std::chrono::duration<double, std::milli>(t_end-t_start).count();
     cout << "Preprocessing time: " << time << endl;
       
@@ -507,22 +436,31 @@ int main()
                 cout<<"usuario nao encontrado"<<endl;
                 continue;
             }
-            hash_usuarios.printa_user(usuario);
+            // hash_usuarios.printa_user(usuario);
             for(int i=0;i<usuario.avaliacoes.size();i++) //percorre as avaliações do usuario
             {
                 jogador_generico=hash_id.busca_jogador(get<0>(usuario.avaliacoes[i]));
-                cout<<"nome: "<<jogador_generico.nome;
+                cout<<"id: "<<jogador_generico.id;
+                cout<<" nome: "<<jogador_generico.nome;
                 cout<<" global rating: "<<jogador_generico.avaliacao;
                 cout<<" count: "<<jogador_generico.num_avaliacoes;
-                cout<<" rating: "<<get<1>(usuario.avaliacoes[i])<<endl;
+                cout<<" rating: "<<get<1>(usuario.avaliacoes[i])<<"\n\n";
             }
         }
 
-        else if (until_first_space.find("top") == 0){
+        else if (until_first_space.find("top") == 0){ //se a string começa com top
             string n_top_str = until_first_space.substr(3);
+            if(n_top_str == ""){
+                cout << "Invalid input\n";
+                continue;
+            }
             int n_top = std::stoi(n_top_str);
             int pos_id=position_to_index(param_str);
-
+            if(pos_id<0 || pos_id>=NUM_POSITIONS)
+            {
+                cout<<"posicao invalida"<<endl;
+                continue;
+            }
             answer_top_query(players_in_position[pos_id], n_top);
         }
 
@@ -554,7 +492,14 @@ int main()
             ids_tags.clear();
             for(int i=0;i<intersection.size();i++)
             {
-                cout<<"id: "<<intersection[i]<<" nome: "<<hash_id.busca_jogador(intersection[i]).nome<<endl;
+                cout<<"id: "<<intersection[i]<<" nome: "<<hash_id.busca_jogador(intersection[i]).nome;
+                cout<<" posicoes: ";
+                for(int j=0;j<hash_id.busca_jogador(intersection[i]).posicoes.size();j++)
+                {
+                    cout<<hash_id.busca_jogador(intersection[i]).posicoes[j]<<" ";
+                }
+                cout<<" rating: "<<hash_id.busca_jogador(intersection[i]).avaliacao;
+                cout<<" count: "<<hash_id.busca_jogador(intersection[i]).num_avaliacoes<<endl;
             }
             intersection.clear();
             
@@ -565,7 +510,14 @@ int main()
             arvore_prefixos.acha_palavra(arvore_prefixos.get_raiz(),param_str,0,ids_substr);
             for(int i=0;i<ids_substr.size();i++)
             {
-                cout<<"id: "<<ids_substr[i]<<" nome: "<<hash_id.busca_jogador(ids_substr[i]).nome<<endl;
+                cout<<"id: "<<ids_substr[i]<<" nome: "<<hash_id.busca_jogador(ids_substr[i]).nome;
+                cout<<" posicoes: ";
+                for(int j=0;j<hash_id.busca_jogador(ids_substr[i]).posicoes.size();j++)
+                {
+                    cout<<hash_id.busca_jogador(ids_substr[i]).posicoes[j]<<" ";
+                }
+                cout<<" rating: "<<hash_id.busca_jogador(ids_substr[i]).avaliacao;
+                cout<<" count: "<<hash_id.busca_jogador(ids_substr[i]).num_avaliacoes<<endl;
             }
         }
 
